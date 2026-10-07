@@ -2,6 +2,10 @@
 
 arch-guxing 的 niri 桌面配置快照。本仓库只归档配置，不自动安装、不影响当前会话，也未上传远端。
 
+## 桌面预览
+
+![niri 桌面预览](docs/images/desktop.png)
+
 ## 当前方案
 
 - niri 26.04；主修饰键 Alt。
