@@ -1,114 +1,192 @@
-# niri-desktop
+# 我的 niri 桌面
 
-arch-guxing 的 niri 桌面配置快照。本仓库只归档配置，不自动安装、不影响当前会话，也未上传远端。
+这是我目前在 Arch Linux 上用的 niri 配置。
 
-## 桌面预览
+主要是 niri 搭配 ashell、foot 和 swww，没有用一体化桌面壳。配置和几个小脚本都放在这里，方便自己备份，也方便有兴趣的人拿去参考。
 
-![niri 桌面预览](docs/images/desktop.png)
+## 预览效果
 
-## 当前方案
+![niri 桌面预览](docs/images/desktop.jpg)
 
-- niri 26.04；主修饰键 Alt。
-- 窗口间距 12px、圆角 10px、柔和阴影。
-- Chrome 固定 opacity 0.97；其他窗口 active 0.98 / inactive 0.85。
-- foot 背景 alpha 0.7；会与合成器窗口透明度叠加。
-- 原生 Apple-inspired 动画：打开 180ms、关闭 140ms；横向滚动、窗口移动与缩放统一弹簧参数。并非 macOS 精确复刻。
-- ashell 顶栏：工作区、窗口标题、托盘、换壁纸、系统信息等。
-- swww：每 30 分钟随机壁纸、1 秒淡入淡出；锁屏时暂停换图。
-- hyprlock 使用当前壁纸；hypridle 空闲 10 分钟熄屏。
-- 莫奈取色、自定义动画 shader 尚未实现。
+## 这套配置是什么样的
 
-## 文件布局
+- **ashell** 放在顶部，显示工作区、窗口标题和托盘，也能换壁纸、打开系统信息。
+- **swww** 每 30 分钟随机换一张壁纸，用 1 秒淡入淡出过渡；锁屏期间不换图。
+- **hyprlock** 跟随当前壁纸，背景轻微模糊；**hypridle** 在空闲 10 分钟后熄屏。
+- **fuzzel** 用来找应用，**mako** 负责通知，中文输入用 **fcitx5**。
+- 主修饰键用 **Alt**，niri 版本是 **26.04**。
+
+莫奈取色还没有加，目前先保留这套原生方案。
+
+## 仓库结构
 
 ```text
-config/niri/config.kdl
-config/ashell/config.toml
-config/foot/foot.ini
-config/fuzzel/fuzzel.ini
-config/mako/config
-config/hypr/{hyprlock.conf,hypridle.conf}
-scripts/{niri-wallpaper,niri-wallpaper-next,niri-system-info,niri-memcheck}
+config/
+├── niri/config.kdl
+├── ashell/config.toml
+├── foot/foot.ini
+├── fuzzel/fuzzel.ini
+├── mako/config
+└── hypr/
+    ├── hyprlock.conf
+    └── hypridle.conf
+scripts/
+├── niri-wallpaper       # 定时换壁纸
+├── niri-wallpaper-next  # 换一张，顶栏按钮也调用它
+├── niri-system-info     # 用 foot 打开 top
+└── niri-memcheck        # 查看内存和进程 PSS 排行
+docs/images/desktop.jpg
 ```
 
-不包含壁纸、Sunshine 凭据/配对状态、输入法用户数据、缓存、运行状态、历史备份或程序二进制。
+壁纸、程序二进制、输入法用户数据和运行缓存没有放进来，Sunshine 的账号及配对信息也没有。这里只保存桌面配置和辅助脚本。
 
-## 依赖
+## 软件包依赖
 
-niri、ashell、foot、fuzzel、mako、swww（含 swww-daemon）、hyprlock、hypridle、fcitx5、xwayland-satellite，以及 PipeWire/WirePlumber（wpctl）、polkit-gnome。
+- 桌面和顶栏：niri、ashell
+- 终端、启动器、通知：foot、fuzzel、mako
+- 壁纸：swww（需要 swww-daemon）
+- 锁屏和空闲管理：hyprlock、hypridle
+- 中文输入和 X11 应用：fcitx5、xwayland-satellite
+- 音量与权限提示：PipeWire/WirePlumber（wpctl）、polkit-gnome
 
-字体：JetBrainsMono Nerd Font Mono、Noto Sans CJK SC；光标：Bibata-Modern-Ice；图标：Adwaita。
+字体用 **JetBrainsMono Nerd Font Mono** 和 **Noto Sans CJK SC**，光标是 **Bibata-Modern-Ice**，图标是 **Adwaita**。
 
-脚本还用到 bash、util-linux（flock）、procps-ng（top/pgrep）、findutils 和常规 GNU 工具。辅助二进制不打包；优先使用发行版包或官方预编译 release。
+几个脚本还需要 bash、util-linux（flock）、procps-ng（top/pgrep）、findutils 和常规 GNU 工具。程序尽量用发行版的包或官方预编译版本，不需要从这个仓库编译。
 
-## 迁移前必须检查
+## 注意事项
 
-这是当前机器的配置快照，不是通用安装器：
+1. **壁纸目录**：默认是 `~/图片/壁纸`，图片需要自己准备。脚本会生成 `~/.local/state/niri-wallpaper/current` 链接，锁屏也从这里读取当前壁纸。
+2. **中文输入**：fcitx5 的配置和词库没有打包，需要自己设置。
 
-1. `/home/guxing` 是硬编码路径，换用户后需替换配置和脚本中的路径。
-2. 壁纸目录是 `~/图片/壁纸`，自行准备图片。`~/.local/state/niri-wallpaper/current` 链接由脚本生成，不入库。
-3. niri environment 中有本机代理 `127.0.0.1:7890` 和 NVIDIA 环境变量；按目标机器调整。代理不可用时应移除对应代理变量。
-4. fcitx5 配置/词库未归档，目标机器需要自行安装和配置中文输入法。
-5. `Alt+Y` 仍是历史 waytray 快捷键，daemon 已不再自启，迁移时建议移除或重新配置。
-6. 脚本 niri-memcheck 的 PSS 只包含可读的进程内存，不包含内核内存；末尾原有“含内核”提示不准确。普通用户无法读取所有进程，所以不要当成全系统精确总账。
 
-## 手动恢复
+## 快速开始
 
-先安装依赖并处理上面的本机路径/代理差异。以下命令会覆盖目标配置，先做好备份：
+下面按 **Arch Linux** 来写，用户名不需要和我一样。先装软件，再复制配置；如果已经有自己的配置，记得保留备份。
+
+### 1. 安装依赖
+
+官方仓库里的软件可以先装好：
 
 ```bash
-cd ~/e/niri-desktop
-backup="$HOME/.local/state/niri-desktop-backups/$(date +%Y%m%d-%H%M%S)"
-mkdir -p "$backup" "$HOME/.config" "$HOME/.local/bin"
+sudo pacman -Syu --needed git python niri foot fuzzel mako hyprlock hypridle \
+    fcitx5 fcitx5-configtool fcitx5-chinese-addons xwayland-satellite \
+    pipewire wireplumber pipewire-pulse polkit-gnome \
+    ttf-jetbrains-mono-nerd noto-fonts-cjk adwaita-icon-theme
+```
+
+另外需要 **ashell**、**swww**（包括 `swww-daemon`）和 **Bibata-Modern-Ice** 光标。这几个请按可用的软件源或上游安装说明安装，不要把我的第三方源配置直接照搬过去：
+
+- [ashell Releases](https://github.com/MalpenZibo/ashell/releases)：可以用官方预编译版本，安装后要能直接运行 `ashell`。
+- [swww](https://codeberg.org/LGFae/swww)：按上游说明安装，或使用提供该软件包的软件源。
+- [Bibata Cursor](https://github.com/ful1e5/Bibata_Cursor)：安装包含 Modern Ice 的光标主题。
+
+安装完可以检查一下，所有命令都应该能找到：
+
+```bash
+for cmd in niri ashell foot fuzzel mako swww swww-daemon hyprlock hypridle fcitx5 wpctl; do
+    command -v "$cmd" || printf '还没装好：%s\n' "$cmd"
+done
+```
+
+已有其他音频服务的话，先确认是否要切换到 PipeWire；中文输入方案用 `fcitx5-configtool` 自行添加。
+
+### 2. 下载配置、准备壁纸
+
+```bash
+git clone https://github.com/mapleLeafOfficial/niri-dotfile.git
+cd niri-dotfile
+mkdir -p "$HOME/图片/壁纸"
+```
+
+把自己的 PNG、JPG 或 WebP 壁纸放进 `~/图片/壁纸`，至少放一张。
+
+### 3. 备份并复制配置
+
+下面的命令会覆盖对应配置。建议在首次登录 niri 之前运行，已经在用 niri 的话也请先保存工作。
+
+```bash
+backup="$HOME/.local/state/niri-dotfile-backups/$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$backup/config" "$backup/bin" "$HOME/.config" "$HOME/.local/bin"
+
 for name in niri ashell foot fuzzel mako hypr; do
     if [ -e "$HOME/.config/$name" ]; then
-        cp -a "$HOME/.config/$name" "$backup/"
+        cp -a "$HOME/.config/$name" "$backup/config/"
     fi
 done
-for name in niri-wallpaper niri-wallpaper-next niri-system-info; do
+for name in niri-wallpaper niri-wallpaper-next niri-system-info niri-memcheck; do
     if [ -e "$HOME/.local/bin/$name" ]; then
-        cp -a "$HOME/.local/bin/$name" "$backup/"
+        cp -a "$HOME/.local/bin/$name" "$backup/bin/"
     fi
 done
-cp -a config/. "$HOME/.config/"
-install -m 755 scripts/niri-wallpaper scripts/niri-wallpaper-next scripts/niri-system-info "$HOME/.local/bin/"
-# memcheck 放在会话 PATH 中；先确认目标文件没有需保留的修改
-sudo install -m 755 scripts/niri-memcheck /usr/local/bin/niri-memcheck
+
+# 先在临时目录适配路径，不修改下载下来的仓库文件。
+stage=$(mktemp -d)
+cp -a config scripts "$stage/"
+python - "$stage" <<'PY'
+import os
+import sys
+from pathlib import Path
+
+stage = Path(sys.argv[1])
+for folder in (stage / "config", stage / "scripts"):
+    for path in folder.rglob("*"):
+        if path.is_file():
+            path.write_text(path.read_text().replace("/home/guxing", os.environ["HOME"]))
+
+# 不把原机器的代理和 NVIDIA 专用变量带到你的机器上。
+path = stage / "config/niri/config.kdl"
+keys = {
+    "http_proxy", "https_proxy", "HTTP_PROXY", "HTTPS_PROXY", "no_proxy", "NO_PROXY",
+    "LIBVA_DRIVER_NAME", "NVD_BACKEND", "__GLX_VENDOR_LIBRARY_NAME",
+}
+lines = path.read_text().splitlines(keepends=True)
+path.write_text("".join(line for line in lines if not (line.split() and line.split()[0] in keys)))
+PY
+
+cp -a "$stage/config/." "$HOME/.config/"
+install -m 755 "$stage"/scripts/* "$HOME/.local/bin/"
+rm -rf "$stage"
+printf '旧配置备份在：%s\n' "$backup"
+```
+
+如果你需要代理或 NVIDIA 专用设置，再按自己的环境加回去；这里默认不沿用我的机器设置。`niri-memcheck` 安装在 `~/.local/bin`，终端里找不到命令时可以直接运行 `~/.local/bin/niri-memcheck`。
+
+### 4. 检查配置，进入桌面
+
+```bash
 niri validate -c "$HOME/.config/niri/config.kdl"
 ```
 
-niri 配置通常自动热重载，但 spawn-at-startup 的变化要重新登录 niri 才执行。foot/ashell 等应用按各自机制重载或重启；不能仅凭进程存活判定重载成功。
+看到 `config is valid` 后，退出当前桌面，在登录界面选择 **niri** 会话。没有登录管理器的话，可以从本地 TTY 运行 `niri-session`；不要在另一个图形桌面里的终端直接运行它来替代登录步骤。
 
-不修改 GDM 或 GNOME 会话设置。不过 foot、fcitx5 等应用配置由用户共享，其他会话启动同一应用也可能读取这些配置。
+进入后，按 **Alt+T** 打开终端、**Alt+D** 打开启动器、**Alt+Shift+/** 查看快捷键。壁纸脚本和顶栏会随会话启动。
 
-## 常用快捷键
+这套配置不会改 GDM 或 GNOME 的会话设置，但 foot 等应用的配置是用户共享的，在别的桌面里打开同一应用也会读到它们。
 
-| 按键 | 功能 |
+## 我常用的快捷键
+
+| 按键 | 做什么 |
 | --- | --- |
-| Alt+T / Alt+D | foot / fuzzel |
+| Alt+T / Alt+D | 打开终端 / 启动器 |
 | Alt+L | 锁屏 |
 | Alt+Q | 关窗 |
-| Alt+O | 概览 |
-| Alt+方向键 | 焦点移动 |
-| Alt+Ctrl+方向键 | 窗口/列搬移 |
-| Alt+1..9 | 工作区 |
-| Alt+U / Alt+I | 下一/上一工作区 |
-| Alt+R | 切换宽度 |
-| Alt+V | 浮动开关 |
-| Alt+X | 切换当前窗口的规则透明度（不是全局开关） |
+| Alt+O | 桌面概览 |
+| Alt+方向键 | 移动焦点 |
+| Alt+Ctrl+方向键 | 搬移窗口或列 |
+| Alt+1..9 | 切换工作区 |
+| Alt+U / Alt+I | 下一 / 上一工作区 |
+| Alt+R | 切换窗口宽度 |
+| Alt+V | 切换浮动 |
+| Alt+X | 切换当前窗口的规则透明度，不是全局开关 |
 | Print | 截图 |
-| Alt+Shift+/ | 快捷键速查 |
+| Alt+Shift+/ | 打开快捷键速查 |
 
-## 校验与版本管理
 
-```bash
-niri validate -c config/niri/config.kdl
-for script in scripts/*; do bash -n "$script" || exit; done
-git status
-```
+## 壁纸来源
 
-本仓库与实时配置是复制关系，不会自动同步。修改桌面后，重新复制对应文件、检查 diff 和敏感信息，再提交。
+预览图里的壁纸来自 [Wallhaven](https://wallhaven.cc/w/mdozo8)。
 
-## 参考
+## 参考文献
 
 - [niri 动画配置](https://github.com/niri-wm/niri/wiki/Configuration:-Animations)
 - [niri 窗口规则](https://github.com/niri-wm/niri/wiki/Configuration:-Window-Rules)

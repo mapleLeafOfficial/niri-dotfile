@@ -180,7 +180,6 @@ binds {
 
     Alt+T hotkey-overlay-title="Terminal (foot)" { spawn "foot"; }
     Alt+D hotkey-overlay-title="Apps (fuzzel)" { spawn "fuzzel"; }
-    Alt+Y hotkey-overlay-title="Tray (waytray)" { spawn "/home/guxing/.local/bin/waytray"; }
     Alt+L hotkey-overlay-title="Lock (hyprlock)" { spawn "hyprlock"; }
 
     // 音量（pipewire / wpctl）
