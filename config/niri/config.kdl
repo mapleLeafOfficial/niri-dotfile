@@ -1,0 +1,282 @@
+// ════════════════════════════════════════════════════════════
+// niri 26.04 极简会话 — arch-guxing
+// 目标：冷启动 idle ≤500MB、无状态栏、ashell 顶条
+// 主修饰键：Alt（原 Super，2026-10-07 应要求全量切换）
+// 旧配置备份：config.kdl.pre-minimal
+// 校验：niri validate -c ~/.config/niri/config.kdl
+// 热键速查：Alt+Shift+/
+// ════════════════════════════════════════════════════════════
+
+environment {
+    // 中文输入法（fcitx5，foot 等 Wayland 原生应用必须走它）
+    GTK_IM_MODULE "fcitx"
+    QT_IM_MODULE "fcitx"
+    XMODIFIERS "@im=fcitx"
+    SDL_IM_MODULE "fcitx"
+    // NVIDIA 专有驱动（niri 官方不支持 NVIDIA，以下为社区惯例配置）
+    LIBVA_DRIVER_NAME "nvidia"
+    NVD_BACKEND "direct"
+    __GLX_VENDOR_LIBRARY_NAME "nvidia"
+    // Electron 应用走原生 Wayland
+    ELECTRON_OZONE_PLATFORM_HINT "auto"
+    // 代理：~/.bashrc 只对终端生效，GUI 应用从这里拿
+    http_proxy "http://127.0.0.1:7890"
+    https_proxy "http://127.0.0.1:7890"
+    HTTP_PROXY "http://127.0.0.1:7890"
+    HTTPS_PROXY "http://127.0.0.1:7890"
+    no_proxy "localhost,127.0.0.0/8,::1"
+    NO_PROXY "localhost,127.0.0.0/8,::1"
+}
+
+input {
+    keyboard {
+        xkb {
+            layout "us"
+        }
+        numlock
+    }
+}
+
+cursor {
+    xcursor-theme "Bibata-Modern-Ice"
+    xcursor-size 24
+}
+
+layout {
+    gaps 12
+    center-focused-column "never"
+    default-column-width {
+        proportion 0.5
+    }
+
+    focus-ring {
+        width 3
+        active-color "#99c8ff"
+        inactive-color "#4d4d55"
+        urgent-color "#f66151"
+    }
+
+    border {
+        off
+    }
+
+    shadow {
+        on
+        softness 24
+        spread 4
+        offset x=0 y=4
+        color "#0006"
+    }
+}
+
+prefer-no-csd
+
+hotkey-overlay {
+    skip-at-startup
+}
+
+screenshot-path "~/图片/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+
+// ── Apple-inspired motion：快速响应、空间连续、克制回弹 ──
+// 使用原生动画；移动/滚动/缩放参数一致，避免联动节奏分裂。
+animations {
+    slowdown 1.0
+
+    workspace-switch {
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.0001
+    }
+    window-open {
+        duration-ms 180
+        curve "cubic-bezier" 0.16 1.0 0.3 1.0
+    }
+    window-close {
+        duration-ms 140
+        curve "ease-out-cubic"
+    }
+    horizontal-view-movement {
+        spring damping-ratio=0.98 stiffness=900 epsilon=0.0001
+    }
+    window-movement {
+        spring damping-ratio=0.98 stiffness=900 epsilon=0.0001
+    }
+    window-resize {
+        spring damping-ratio=0.98 stiffness=900 epsilon=0.0001
+    }
+    overview-open-close {
+        spring damping-ratio=1.0 stiffness=800 epsilon=0.0001
+    }
+    config-notification-open-close {
+        spring damping-ratio=1.0 stiffness=1000 epsilon=0.001
+    }
+    exit-confirmation-open-close {
+        spring damping-ratio=1.0 stiffness=900 epsilon=0.001
+    }
+    screenshot-ui-open {
+        duration-ms 160
+        curve "ease-out-cubic"
+    }
+    recent-windows-close {
+        duration-ms 140
+        curve "ease-out-cubic"
+    }
+}
+
+// ── 自启（只属于 niri 会话，GNOME 不受影响）────────────────
+spawn-at-startup "/home/guxing/.local/bin/niri-wallpaper"
+spawn-at-startup "mako"
+spawn-at-startup "hypridle"
+spawn-at-startup "foot" "--server"
+spawn-at-startup "fcitx5" "-d"
+// spawn-at-startup "/home/guxing/.local/bin/waytray-daemon"  // 已由 ashell 的 Tray 模块接竿
+spawn-at-startup "ashell"
+// 远程串流由 systemd 用户服务 sunshine 承担（随 graphical-session.target 自启），不再走 niri spawn
+// spawn-at-startup "nm-applet"  // 网络由 ashell 管理
+spawn-at-startup "/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1"
+// xwayland-satellite：niri 26.04 遇到 X11 客户端时自动拉起，无需手动
+
+// ── 窗口规则 ────────────────────────────────────────────────
+// 焦点区分透明：当前窗口基本清晰，失焦窗口更透明/更暗
+// Chrome 排除在外（下面单独处理）
+window-rule {
+    match is-active=true
+    exclude app-id=r#"^google-chrome$"#
+    opacity 0.98
+}
+window-rule {
+    match is-active=false
+    exclude app-id=r#"^google-chrome$"#
+    opacity 0.85
+}
+// Chrome 专用：永久 0.97（曲线救国，不随焦点变化）
+window-rule {
+    match app-id=r#"^google-chrome$"#
+    opacity 0.97
+}
+// 全局窗口圆角（clip 防止应用内容溢出直角）
+window-rule {
+    geometry-corner-radius 10
+    clip-to-geometry true
+}
+window-rule {
+    match app-id="^niri-system-info$"
+    open-floating true
+}
+window-rule {
+    match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+    open-floating true
+}
+
+// waytray 客户端弹出时浮动居中（小窗更精致，不占半屏列）
+window-rule {
+    match app-id=r#"^waytray$"#
+    match title=r#"^WayTray$"#
+    match title=r#"^System Tray$"#
+    open-floating true
+}
+
+// ── 键位（主修饰键 = Alt）──────────────────────────────────
+binds {
+    Alt+Shift+Slash { show-hotkey-overlay; }
+
+    Alt+T hotkey-overlay-title="Terminal (foot)" { spawn "foot"; }
+    Alt+D hotkey-overlay-title="Apps (fuzzel)" { spawn "fuzzel"; }
+    Alt+Y hotkey-overlay-title="Tray (waytray)" { spawn "/home/guxing/.local/bin/waytray"; }
+    Alt+L hotkey-overlay-title="Lock (hyprlock)" { spawn "hyprlock"; }
+
+    // 音量（pipewire / wpctl）
+    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05+ -l 1.0"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.05-"; }
+    XF86AudioMute        allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
+
+    // 截图（niri 内置 UI）
+    Print      { screenshot; }
+    Ctrl+Print { screenshot-screen; }
+    Alt+Print  { screenshot-window; }
+
+    // 概览
+    Alt+O repeat=false { toggle-overview; }
+
+    Alt+Q repeat=false { close-window; }
+
+    // 焦点移动
+    Alt+Left  { focus-column-left; }
+    Alt+Down  { focus-window-down; }
+    Alt+Up    { focus-window-up; }
+    Alt+Right { focus-column-right; }
+    Alt+H     { focus-column-left; }
+    Alt+J     { focus-window-down; }
+    Alt+K     { focus-window-up; }
+
+    // 窗口搬移
+    Alt+Ctrl+Left  { move-column-left; }
+    Alt+Ctrl+Down  { move-window-down; }
+    Alt+Ctrl+Up    { move-window-up; }
+    Alt+Ctrl+Right { move-column-right; }
+    Alt+Ctrl+H     { move-column-left; }
+    Alt+Ctrl+J     { move-window-down; }
+    Alt+Ctrl+K     { move-window-up; }
+    Alt+Ctrl+L     { move-column-right; }
+
+    Alt+Home { focus-column-first; }
+    Alt+End  { focus-column-last; }
+    Alt+Ctrl+Home { move-column-to-first; }
+    Alt+Ctrl+End  { move-column-to-last; }
+
+    // 工作区
+    Alt+Page_Down { focus-workspace-down; }
+    Alt+Page_Up   { focus-workspace-up; }
+    Alt+U         { focus-workspace-down; }
+    Alt+I         { focus-workspace-up; }
+    Alt+Ctrl+Page_Down { move-column-to-workspace-down; }
+    Alt+Ctrl+Page_Up   { move-column-to-workspace-up; }
+    Alt+Shift+Page_Down { move-workspace-down; }
+    Alt+Shift+Page_Up   { move-workspace-up; }
+
+    Alt+1 { focus-workspace 1; }
+    Alt+2 { focus-workspace 2; }
+    Alt+3 { focus-workspace 3; }
+    Alt+4 { focus-workspace 4; }
+    Alt+5 { focus-workspace 5; }
+    Alt+6 { focus-workspace 6; }
+    Alt+7 { focus-workspace 7; }
+    Alt+8 { focus-workspace 8; }
+    Alt+9 { focus-workspace 9; }
+    Alt+Ctrl+1 { move-column-to-workspace 1; }
+    Alt+Ctrl+2 { move-column-to-workspace 2; }
+    Alt+Ctrl+3 { move-column-to-workspace 3; }
+    Alt+Ctrl+4 { move-column-to-workspace 4; }
+    Alt+Ctrl+5 { move-column-to-workspace 5; }
+    Alt+Ctrl+6 { move-column-to-workspace 6; }
+    Alt+Ctrl+7 { move-column-to-workspace 7; }
+    Alt+Ctrl+8 { move-column-to-workspace 8; }
+    Alt+Ctrl+9 { move-column-to-workspace 9; }
+
+    // 列组合
+    Alt+BracketLeft  { consume-or-expel-window-left; }
+    Alt+BracketRight { consume-or-expel-window-right; }
+    Alt+Comma  { consume-window-into-column; }
+    Alt+Period { expel-window-from-column; }
+
+    // 宽高
+    Alt+R       { switch-preset-column-width; }
+    Alt+Shift+R { switch-preset-column-width-back; }
+    Alt+F       { maximize-column; }
+    Alt+Shift+F { fullscreen-window; }
+    Alt+M       { maximize-window-to-edges; }
+    Alt+C       { center-column; }
+    Alt+Minus   { set-column-width "-10%"; }
+    Alt+Equal   { set-column-width "+10%"; }
+
+    // 浮动 / 标签
+    Alt+V       { toggle-window-floating; }
+    Alt+Shift+V { switch-focus-between-floating-and-tiling; }
+    Alt+W       { toggle-column-tabbed-display; }
+
+    // 会话
+    Alt+Shift+E { quit; }
+    Alt+Shift+P { power-off-monitors; }
+
+    // 全局透明开关（临时看清晰版窗口）
+    Alt+X repeat=false { toggle-window-rule-opacity; }
+}

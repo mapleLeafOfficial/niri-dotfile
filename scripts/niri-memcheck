@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# niri 会话内存自检 — PSS 口径（共享库按比例分摊，比 RSS 诚实）
+# 用法：GDM 冷选 niri → 不开任何应用 → foot 里运行 `niri-memcheck`
+
+echo "════ free -h（used 不含 buff/cache）════"
+free -h
+echo
+echo "════ 用户态进程 PSS Top 20 ════"
+for r in /proc/[0-9]*/smaps_rollup; do
+    pss=$(awk '/^Pss:/{print $2}' "$r" 2>/dev/null) || continue
+    [ -n "$pss" ] || continue
+    pid=${r#/proc/}; pid=${pid%/smaps_rollup}
+    cmd=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | cut -c1-70)
+    [ -n "$cmd" ] || cmd="(kernel/zombie: $pid)"
+    printf '%s\t%s\n' "$pss" "$cmd"
+done | sort -rn | head -20 | awk -F'\t' '{printf "%8.1f MiB  %s\n", $1/1024, $2}'
+echo
+awk '/^Pss:/{s+=$2} END{printf "════ 全系统 PSS 合计：%.1f MiB（含内核+系统服务，仅参考）════\n", s/1024}' /proc/[0-9]*/smaps_rollup 2>/dev/null

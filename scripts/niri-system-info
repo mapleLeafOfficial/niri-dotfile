@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+exec foot --app-id=niri-system-info --title='系统信息 · CPU / 内存' --window-size-chars=80x24 top

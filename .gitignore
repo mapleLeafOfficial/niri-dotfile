@@ -1,0 +1,17 @@
+# 凭据、本机状态和缓存不入库
+.env
+.env.*
+*.pem
+*.key
+sunshine/
+**/sunshine_state.json
+cache/
+state/
+wallpapers/
+
+# 编辑器和历史备份
+*.bak
+*.pre-*
+*~
+*.swp
+.DS_Store

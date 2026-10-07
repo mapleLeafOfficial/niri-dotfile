@@ -1,0 +1,23 @@
+# ashell — niri 状态条（顶层，热重载：改完即生效）
+# 文档：https://malpenzibo.github.io/ashell/docs/configuration
+
+position = "Top"
+
+[appearance]
+font_name = "JetBrainsMono Nerd Font Mono"
+scale_factor = 1.3
+
+[modules]
+left = ["Workspaces"]
+center = ["WindowTitle"]
+right = [["Tray", "WallpaperNext", "SystemPanel", "Tempo", "Privacy", "Settings"]]
+
+[[CustomModule]]
+name = "WallpaperNext"
+icon = "󰸉"
+command = "/home/guxing/.local/bin/niri-wallpaper-next"
+
+[[CustomModule]]
+name = "SystemPanel"
+icon = "󰍛"
+command = "/home/guxing/.local/bin/niri-system-info"

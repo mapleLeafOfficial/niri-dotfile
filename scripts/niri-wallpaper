@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# niri 专用：30 分钟随机轮换，锁屏期间暂停。
+set -u
+exec 9>"${XDG_RUNTIME_DIR:?}/niri-wallpaper.lock"
+flock -n 9 || exit 0
+swww-daemon 9>&- &
+daemon=$!
+trap 'kill "$daemon" 2>/dev/null || true' EXIT
+trap 'exit 0' TERM INT
+for ((i=0; i<100; i++)); do
+    swww query >/dev/null 2>&1 && break
+    kill -0 "$daemon" 2>/dev/null || exit 1
+    sleep 0.1
+done
+while swww query >/dev/null 2>&1; do
+    /home/guxing/.local/bin/niri-wallpaper-next
+    sleep 1800 9>&- &
+    wait $! || true
+done

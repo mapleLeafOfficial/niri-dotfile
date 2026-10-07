@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# 定时轮换与 ashell 按钮共用，避免连续重复并同步锁屏。
+set -u
+folder=/home/guxing/图片/壁纸
+state=/home/guxing/.local/state/niri-wallpaper
+mkdir -p "$state"
+exec 8>"${XDG_RUNTIME_DIR:?}/niri-wallpaper-next.lock"
+flock -n 8 || exit 0
+pgrep -u "$UID" -x hyprlock >/dev/null && exit 0
+current=$(readlink "$state/current" || true)
+mapfile -d '' images < <(find "$folder" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) -print0)
+candidates=()
+for image in "${images[@]}"; do
+    [[ "$image" == "$current" ]] || candidates+=("$image")
+done
+if ((${#candidates[@]} == 0)); then candidates=("${images[@]}"); fi
+if ((${#candidates[@]})); then
+    image=${candidates[RANDOM % ${#candidates[@]}]}
+    if swww img "$image" --resize crop --transition-type fade --transition-duration 1 --transition-fps 30; then
+        ln -sfn "$image" "$state/current.next"
+        mv -Tf "$state/current.next" "$state/current"
+    fi
+fi
